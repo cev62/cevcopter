@@ -38,6 +38,7 @@ class GamePad(threading.Thread):
 
     def __init__(self, filename):
         threading.Thread.__init__(self)
+        self.isStopped = False
         self.daemon = True
         self.filename = filename
         self.fd = None
@@ -45,9 +46,12 @@ class GamePad(threading.Thread):
         self.lock = threading.Lock()
         self.buttons = [False for i in GamePad.buttonMap.keys()]
         self.axes = [0.0 for i in GamePad.axisMap.keys()]
+        self.start()
 
     def run(self):
         while True:
+            if self.isStopped:
+                return
             if not self.fd:
                 try:
                     self.fd = open(self.filename, "r")
@@ -102,3 +106,23 @@ class GamePad(threading.Thread):
     def resetValues(self):
         self.buttons = [False for i in GamePad.buttonMap.keys()]
         self.axes = [0.0 for i in GamePad.axisMap.keys()]
+
+    def close(self):
+        self.isStopped = True
+        if self.fd:
+            self.fd.close()
+        self.resetValues()
+
+# Test functions for GamePad:
+def test_gamepad():
+    gp = GamePad("/dev/input/js1")
+    assert gp != None
+    assert gp.daemon == True
+    assert gp.filename == "/dev/input/js1"
+    assert gp.buttons == [False for i in gp.buttons]
+    assert gp.axes == [0.0 for i in gp.axes]
+    assert gp.convertByteToFloat(127) == 1
+    assert gp.convertByteToFloat(0) == 0
+    assert gp.convertByteToFloat(128) == -1
+    gp.close()
+    assert not gp.fd
