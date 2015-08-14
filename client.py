@@ -10,28 +10,46 @@ class Client(threading.Thread):
             data to be sent to the server and processPacket is a function that takes
             received data as an argument. Both of these functions must deal with
             semaphores on their own."""
+        threading.Thread.__init__(self)
         self.HOST = host
         self.PORT = port
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.processPacket = processPacket
         self.generatePacket = generatePacket
         self.updatePeriod = updatePeriod
-        self.isConnected = True
+        self.isConnected = False
         self.daemon = True
     def run(self):
         while True:
             if not self.isConnected:
                 try:
+                    print "Attempting to connect..."
                     self.socket.connect((self.HOST, self.PORT))
+                    self.socket.sendall("*Super secret handshake*")
+                    if self.socket.recv(1024) != "Accepted":
+                        print "Server rejected connection..."
+                        self.isConnected = False
+                        self.socket.close()
+                        self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                        continue
                     self.isConnected = True
+                    self.socket.sendall(self.generatePacket())
                 except socket.error:
                     self.isConnected = False
+            else:
+                try:
+                    self.processPacket(self.socket.recv(1024))
+                    self.socket.sendall(self.generatePacket())
+                except socket.error:
+                    print "[ERROR] Reconnecting..."
+                    self.socket.close()
+                    self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    self.isConnected = False
 
-            incomingPacket = self.socket.recv(1024)
-            outgoingPacket = self.processPacket(incomingPacket)
-            self.connection.sendall(outgoingPacket)
-            time.sleep(self.server.updatePeriod)
-            if not incomingPacket:
-                # this connection is bad.
-                # TODO probably need a safe mode here
-                pass
+            time.sleep(self.updatePeriod)
+
+    def close(self):
+        self.stop()
+        if self.socket != None:
+            self.socket.close()
+        self.isConnected = False
