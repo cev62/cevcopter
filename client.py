@@ -3,6 +3,7 @@
 import socket
 import threading
 import time
+import subprocess
 
 class Client(threading.Thread):
     def __init__(self, generatePacket, processPacket, host="192.168.1.31", port=22333, updatePeriod = 0.03):
@@ -18,11 +19,21 @@ class Client(threading.Thread):
         self.generatePacket = generatePacket
         self.updatePeriod = updatePeriod
         self.isConnected = False
+        self.isServerPingable = False
         self.daemon = True
     def run(self):
         while True:
             if not self.isConnected:
                 try:
+                    #print "Pinging..."
+                    ping = subprocess.Popen(["ping", "-c 1", "-w 1", self.HOST], stdout=subprocess.PIPE)
+                    o,e = ping.communicate()
+                    if ping.returncode:
+                        #print "FAILED"
+                        self.isServerPingable = False
+                    else:
+                        #print "SUCCESS"
+                        self.isServerPingable = True
                     print "Attempting to connect..."
                     self.socket.connect((self.HOST, self.PORT))
                     self.socket.sendall("*Super secret handshake*")
@@ -41,7 +52,7 @@ class Client(threading.Thread):
                     self.processPacket(self.socket.recv(1024))
                     self.socket.sendall(self.generatePacket())
                 except socket.error:
-                    print "[ERROR] Reconnecting..."
+                    #print "[ERROR] Reconnecting..."
                     self.socket.close()
                     self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     self.isConnected = False

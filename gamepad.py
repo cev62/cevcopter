@@ -40,6 +40,7 @@ class GamePad(threading.Thread):
         threading.Thread.__init__(self)
         self.isStopped = False
         self.daemon = True
+        self.isConnected = False
         self.filename = filename
         self.fd = None
         self.packet = []
@@ -55,7 +56,9 @@ class GamePad(threading.Thread):
             if not self.fd:
                 try:
                     self.fd = open(self.filename, "r")
+                    self.isConnected = True
                 except IOError:
+                    self.isConnected = False
                     self.fd = None
                     continue
             try:
@@ -77,6 +80,9 @@ class GamePad(threading.Thread):
                                     axisValue = -axisValue
                                     if axisValue == 0.0:
                                         axisValue = 0.0 # To get rid of -0.0
+                            if nameByte == GamePad.axisMap["LEFT_TRIGGER"]  \
+                                or nameByte == GamePad.axisMap["RIGHT_TRIGGER"]:
+                                axisValue = (axisValue + 1.0) / 2.0
 
                             self.axes[nameByte] = axisValue
                         self.lock.release()
@@ -84,6 +90,7 @@ class GamePad(threading.Thread):
             except IOError:
                 self.fd.close()
                 self.fd = None
+                self.isConnected = False
                 self.resetValues()
 
     def get(self, input):
