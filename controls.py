@@ -23,6 +23,8 @@ class Controls():
         self.yAxis = 0.0
         self.turnAxis = 0.0
 
+        self.gyro = [0.0, 0.0, 0.0]
+
         self.comms = Client(self.generatePacket, self.processPacket, "192.168.1.31", 22333, 0.03)
         self.commsLock = threading.Lock()
         self.comms.start()
@@ -40,11 +42,13 @@ class Controls():
                             self.state = Controls.ENABLED
                         if self.gamepad.get("X"):
                             self.state = Controls.DOWNLOADING_CODE
-                            self.comms.downloadCode()
+                            self.comms.isDownloadingCode = True
                         if self.gamepad.get("Y"):
                             self.state = Controls.REBOOTING
+                            self.comms.isRebooting = True
                         if self.gamepad.get("BACK"):
                             self.state = Controls.POWERED_OFF
+                            self.comms.isPoweringOff = True
                         if self.gamepad.get("LOGITECH"):
                             # Maybe need to do some thing here.
                             sys.exit(0)
@@ -52,6 +56,7 @@ class Controls():
                     if self.gamepad.get("LB") and self.gamepad.get("RB"):
                         if self.gamepad.get("X"):
                             self.state = Controls.DOWNLOADING_CODE
+                            self.comms.isDownloadingCode = True
 
             elif self.state == Controls.ENABLED:
                 if self.comms.isConnected:
@@ -61,52 +66,19 @@ class Controls():
                     self.state = Controls.DISABLED
 
             elif self.state == Controls.DOWNLOADING_CODE:
-                if self.comms.isConnected:
-                    # This means it has reconnected after the download
+                if not self.comms.isDownloadingCode:
+                    # This means it is done downloading code
                     self.state = Controls.DISABLED
 
             elif self.state == Controls.REBOOTING:
-                if self.comms.isConnected:
+                if not self.comms.isRebooting:
                     # This means it has reconnected after the reboot
                     self.state = Controls.DISABLED
 
             elif self.state == Controls.POWERED_OFF:
-                if self.comms.isConnected:
+                if not self.comms.isPoweringOff:
                     # This means it has reconnected after powering off
                     self.state = Controls.DISABLED
-
-            """if self.comms.isConnected:
-                if self.gamepad.get("B"):
-                    # Pressing B disables the quadcopter if comms is connected
-                    self.state = Controls.DISABLED
-                    #print "Updated State: " + str(self.state)
-
-                elif self.gamepad.get("LB") and self.gamepad.get("RB"):
-                    # If LB and RB are pressed, major state changes can happen
-                    #print "Bumpers pressed"
-                    if self.state == Controls.DISABLED:
-                        if self.gamepad.get("A"):
-                            self.state = Controls.ENABLED
-                        if self.gamepad.get("X"):
-                            self.state = Controls.DOWNLOADING_CODE
-                            self.comms.downloadCode()
-                        if self.gamepad.get("Y"):
-                            self.state = Controls.REBOOTING
-                        if self.gamepad.get("BACK"):
-                            self.state = Controls.POWERED_OFF
-                        if self.gamepad.get("LOGITECH"):
-                            # Maybe need to do some thing here.
-                            sys.exit(0)
-            elif self.comms.isServerPingable:
-                # If the gamepad is connected, comms is not connected,
-                # but the server is pingable, you can still download 
-                # code via ssh
-                if self.gamepad.get("LB") and self.gamepad.get("RB"):
-                    # If LB and RB are pressed, major state changes can happen
-                    if self.state == Controls.DISABLED:
-                        if self.gamepad.get("X"):
-                            self.state = Controls.DOWNLOADING_CODE"""
-
         else:
             # Need to have the gamepad connected to do anything
             self.state = Controls.DISABLED
@@ -140,7 +112,9 @@ class Controls():
 
     def processPacket(self,packet):
         self.commsLock.acquire()
-        print "[Server Reply] " + str(packet)
+        #print "[Server Reply] " + str(packet)
+        self.gyro = [float(i) for i in packet.split("\t")[0:3]]
+        print self.gyro
         self.commsLock.release()
 
 c = Controls()
@@ -153,11 +127,8 @@ while True:
                   ("Comms", c.comms.isConnected)]
     #print axes
     #print c.gamepad.get("LB"), c.gamepad.get("RB")
-    gui.display(Controls, c.state, axes, indicators, None, None)
+    gui.display(Controls, c.state, axes, c.gyro, indicators, None, None)
 
     time.sleep(0.05)
-    #print gp.get("LEFT_X")
-gp.stop()
-c.stop()
-c.close()
+
 
