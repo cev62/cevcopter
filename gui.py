@@ -13,6 +13,10 @@ blue = (255, 0, 0)
 green = (0, 255, 0)
 red = (0, 0, 255)
 yellow = (0, 255, 255)
+paleBlue = (255, 192, 192)
+paleGreen = (192, 255, 192)
+paleRed = (192, 192, 255)
+paleYellow = (192, 255, 255)
 
 joystickCenter = (137, 137)
 joystickRadius = 87
@@ -37,13 +41,15 @@ throttleFill = white
 throttleKnobStroke = black
 throttleKnobFill = gray
 
-def __init__(self):
-    pass
+indicatorCenter = (37, 262)
+indicatorSpacing = 25
+indicatorRadius = 10
+indicatorStroke = gray
 
 def dist(a, b):
     return math.sqrt((float(a[0]) - float(b[0]))**2 + (float(a[1]) - float(b[1]))**2)
 
-def display(axes, indicators, message, image):
+def display(Controls, state, axes, indicators, message, image):
     img = np.zeros((450, 325, 3), np.uint8)
     img[:] = [255, 255, 255]
 
@@ -75,6 +81,51 @@ def display(axes, indicators, message, image):
     throttleKnobCorner = (throttleCorner[0], throttleCorner[1] + throttleHeight - int(axes[3] * (throttleHeight - throttleKnobHeight)) - throttleKnobHeight)
     cv2.rectangle(img, throttleKnobCorner, (throttleKnobCorner[0] + throttleKnobWidth, throttleKnobCorner[1] + throttleKnobHeight), throttleKnobFill, -1)
     cv2.rectangle(img, throttleKnobCorner, (throttleKnobCorner[0] + throttleKnobWidth, throttleKnobCorner[1] + throttleKnobHeight), throttleKnobStroke, 1)
+
+    for i, (name, value) in enumerate(indicators):
+        fill = red
+        if value:
+            fill = green
+        cv2.circle(img, (indicatorCenter[0], indicatorCenter[1] + i * indicatorSpacing), indicatorRadius, fill, -1)
+        cv2.circle(img, (indicatorCenter[0], indicatorCenter[1] + i * indicatorSpacing), indicatorRadius, indicatorStroke, 1)
+        cv2.putText(img, name, (indicatorCenter[0] + 2 * indicatorRadius, indicatorCenter[1] + i * indicatorSpacing + indicatorRadius - 4), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (100, 100, 100), 1)
+
+    # State indicator box
+    solidFill = gray
+    paleFill = gray
+    stateName = "Unknown State"
+    if state == Controls.DISABLED:
+        solidFill = red
+        paleFill = paleRed
+        stateName = "Disabled"
+    if state == Controls.ENABLED:
+        solidFill = green
+        paleFill = paleGreen
+        stateName = "Enabled"
+    if state == Controls.DOWNLOADING_CODE:
+        solidFill = blue
+        paleFill = paleBlue
+        stateName = "Downloading"
+    if state == Controls.REBOOTING:
+        solidFill = yellow
+        paleFill = paleYellow
+        stateName = "Rebooting"
+    if state == Controls.POWERED_OFF:
+        solidFill = yellow
+        paleFill = paleYellow
+        stateName = "Powered Off"
+
+
+    topLeftCorner = (indicatorCenter[0] - indicatorRadius, indicatorCenter[1] + len(indicators)  *indicatorSpacing)
+    bottomRightCorner = (width - indicatorSpacing, topLeftCorner[1] + 44)
+    cv2.rectangle(img, topLeftCorner, bottomRightCorner, solidFill, -1)
+    delta = 5
+    cv2.rectangle(img, (topLeftCorner[0] + delta, topLeftCorner[1] + delta), (bottomRightCorner[0] - delta, bottomRightCorner[1] - delta), paleFill, -1)
+    cv2.rectangle(img, topLeftCorner, bottomRightCorner, gray, 1)
+
+
+    textSize = cv2.getTextSize(stateName, cv2.FONT_HERSHEY_SIMPLEX, 1.0, 1)
+    cv2.putText(img, stateName, ((topLeftCorner[0] + bottomRightCorner[0] - textSize[0][0]) / 2, topLeftCorner[1] + 32), cv2.FONT_HERSHEY_SIMPLEX, 1.0, black, 1)
 
 
     cv2.imshow("Cevcopter Controls", img)

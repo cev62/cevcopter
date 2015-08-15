@@ -3,7 +3,7 @@ from server import *
 
 def processPacket(packet):
     print "[Client Message] " + str(packet)
-    return "Hi, I'm a server."
+    return "Hi, I'm a server Whoo!."
 
 s = Server(processPacket, 22333, 0.1)
 s.start()
