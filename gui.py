@@ -115,6 +115,10 @@ def display(Controls, state, axes, gyro, indicators, message, image):
         solidFill = yellow
         paleFill = paleYellow
         stateName = "Powered Off"
+    if state == Controls.INITIALIZING:
+        solidFill = red
+        paleFill = paleYellow
+        stateName = "Initializing"
 
 
     topLeftCorner = (indicatorCenter[0] - indicatorRadius, indicatorCenter[1] + len(indicators)  *indicatorSpacing)

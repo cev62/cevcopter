@@ -167,8 +167,10 @@ int fr_pin = 5;
 int br_pin = 6;
 
 int fl_power = 0, bl_power = 0, fr_power = 0, br_power = 0;
+bool nextRead_fl = true, nextRead_bl = false, nextRead_fr = false, nextRead_br = false;
+int c = 2;
 
-int motor_watchdog = millis();
+long motor_watchdog = millis();
 
 SoftwareServo fl, bl, fr, br;
 
@@ -375,6 +377,10 @@ void loop() {
             Serial.print("\t");
             Serial.print(ypr[2] * 180/M_PI);
             Serial.print("\t");
+            Serial.print(millis() - motor_watchdog);
+            Serial.print("\t");
+            Serial.print(c);
+            Serial.print("\t");
             Serial.print(fl_power);
             Serial.print("\t");
             Serial.print(bl_power);
@@ -449,21 +455,92 @@ void loop() {
             motor_watchdog = millis();
           }
         }*/
+
+        /*Serial.print("MOTORS\t");
+            Serial.print("0.0\t1.0\t2.0\t");
+            Serial.print(fl_power);
+            Serial.print("\t");
+            Serial.print(bl_power);
+            Serial.print("\t");
+            Serial.print(fr_power);
+            Serial.print("\t");
+            Serial.println(br_power);*/
         
         while (Serial.available() > 0)
         {
-          fl_power = Serial.read();
+          c = (int)Serial.read();
+          if (c > 180)
+          {
+            // Set flag for next value to be read
+            switch (c)
+            {
+              case 255:
+                nextRead_fl = true;
+                nextRead_bl = false;
+                nextRead_fr = false;
+                nextRead_br = false;
+                break;
+              case 254:
+                nextRead_fl = false;
+                nextRead_bl = true;
+                nextRead_fr = false;
+                nextRead_br = false;
+                break;
+              case 253:
+                nextRead_fl = false;
+                nextRead_bl = false;
+                nextRead_fr = true;
+                nextRead_br = false;
+                break;
+              case 252:
+                nextRead_fl = false;
+                nextRead_bl = false;
+                nextRead_fr = false;
+                nextRead_br = true;
+                break;
+              default:
+                nextRead_fl = true;
+                nextRead_bl = false;
+                nextRead_fr = false;
+                nextRead_br = false;
+                break;
+            }
+          }
+          else
+          {
+            // Update the value of the motor
+            if (nextRead_fl)
+            {
+              fl_power = c;
+            }
+            if (nextRead_bl)
+            {
+              bl_power = c;
+            }
+            if (nextRead_fr)
+            {
+              fr_power = c;
+            }
+            if (nextRead_br)
+            {
+              br_power = c;
+            }
+          }
+          
+          /*fl_power = Serial.read();
           bl_power = fl_power;
           fr_power = fl_power;
           br_power = fl_power;
           fl.write(fl_power);
           bl.write(bl_power);
           fr.write(fr_power);
-          br.write(br_power);
-          motor_watchdog = millis();
+          br.write(br_power);*/
+          
+          
+          //motor_watchdog = millis();
         }
         
-        if(millis() - motor_watchdog > 50)
+        if(false)//millis() - motor_watchdog > 50)
         {
           fl_power = 0;
           bl_power = 0;
@@ -473,6 +550,12 @@ void loop() {
           bl.write(0);
           fr.write(0);
           br.write(0);
+        }
+        else{
+          fl.write(fl_power);
+          bl.write(bl_power);
+          fr.write(fr_power);
+          br.write(br_power);
         }
         
         SoftwareServo::refresh();

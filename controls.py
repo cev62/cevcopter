@@ -15,6 +15,7 @@ class Controls():
     DOWNLOADING_CODE    = 2
     REBOOTING           = 3
     POWERED_OFF         = 4
+    INITIALIZING        = 5
 
     def __init__(self):
         self.state = Controls.DISABLED
@@ -49,6 +50,8 @@ class Controls():
                         if self.gamepad.get("BACK"):
                             self.state = Controls.POWERED_OFF
                             self.comms.isPoweringOff = True
+                        if self.gamepad.get("START"):
+                            self.state = Controls.INITIALIZING
                         if self.gamepad.get("LOGITECH"):
                             # Maybe need to do some thing here.
                             sys.exit(0)
@@ -79,6 +82,11 @@ class Controls():
                 if not self.comms.isPoweringOff:
                     # This means it has reconnected after powering off
                     self.state = Controls.DISABLED
+
+            elif self.state == Controls.INITIALIZING:
+                if self.comms.isConnected:
+                    if self.gamepad.get("B"):
+                        self.state = Controls.DISABLED
         else:
             # Need to have the gamepad connected to do anything
             self.state = Controls.DISABLED
@@ -106,15 +114,16 @@ class Controls():
                + str(self.xAxis)            + "," \
                + str(self.yAxis)            + "," \
                + str(self.turnAxis)    
-
+        #print output
         self.commsLock.release()
         return output
 
     def processPacket(self,packet):
         self.commsLock.acquire()
-        #print "[Server Reply] " + str(packet)
-        self.gyro = [float(i) for i in packet.split("\t")[0:3]]
-        print self.gyro
+        if len(packet.split("\t")) == 3:
+            #print "[Server Reply] " + str(packet)
+            self.gyro = [float(i) for i in packet.split("\t")[0:3]]
+            print self.throttleAxis
         self.commsLock.release()
 
 c = Controls()
