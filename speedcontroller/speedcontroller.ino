@@ -174,25 +174,46 @@ long motor_watchdog = millis();
 
 SoftwareServo fl, bl, fr, br;
 
+const uint16_t PWM_MIN_PULSE_WIDTH = 1350;
+const uint16_t PWM_MAX_PULSE_WIDTH = 2400;
+
+bool areServosAttached = false;
+
 void setServoAttachment(bool value)
 {
   if(value)
   {
-    fl.attach(3);
-    fl.write(0);
-    bl.attach(4);
-    bl.write(0);
-    fr.attach(5);
-    fr.write(0);
-    br.attach(6);
-    br.write(0);
+    if (!areServosAttached)
+    {
+      fl.attach(3);
+      fl.setMinimumPulse(PWM_MIN_PULSE_WIDTH);
+      fl.setMaximumPulse(PWM_MAX_PULSE_WIDTH);
+      fl.write(0);
+      bl.attach(4);
+      bl.setMinimumPulse(PWM_MIN_PULSE_WIDTH);
+      bl.setMaximumPulse(PWM_MAX_PULSE_WIDTH);
+      bl.write(0);
+      fr.attach(5);
+      fr.setMinimumPulse(PWM_MIN_PULSE_WIDTH);
+      fr.setMaximumPulse(PWM_MAX_PULSE_WIDTH);
+      fr.write(0);
+      br.attach(6);
+      br.setMinimumPulse(PWM_MIN_PULSE_WIDTH);
+      br.setMaximumPulse(PWM_MAX_PULSE_WIDTH);
+      br.write(0);
+      areServosAttached = true;
+    }
   }
   else 
   {
-    fl.detach();
-    bl.detach();
-    fr.detach();
-    br.detach();
+    if (areServosAttached)
+    {
+      fl.detach();
+      bl.detach();
+      fr.detach();
+      br.detach();
+      areServosAttached = false;
+    }
   }
 }
 
@@ -552,10 +573,18 @@ void loop() {
           br.write(0);
         }
         else{
-          fl.write(fl_power);
-          bl.write(bl_power);
-          fr.write(fr_power);
-          br.write(br_power);
+          if (fl_power == 0 && bl_power == 0 && fr_power == 0 && br_power == 0)
+          {
+            setServoAttachment(false);
+          }
+          else
+          {
+            setServoAttachment(true);
+            fl.write(fl_power);
+            bl.write(bl_power);
+            fr.write(fr_power);
+            br.write(br_power);
+          }
         }
         
         SoftwareServo::refresh();

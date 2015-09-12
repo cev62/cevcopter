@@ -1,4 +1,4 @@
-# Class that deals with 
+# Class that deals with
 
 from gamepad import *
 import time
@@ -26,7 +26,7 @@ class Controls():
 
         self.gyro = [0.0, 0.0, 0.0]
 
-        self.comms = Client(self.generatePacket, self.processPacket, "192.168.1.31", 22333, 0.03)
+        self.comms = Client(self.generatePacket, self.processPacket, "192.168.1.20", 22333, 0.03)
         self.commsLock = threading.Lock()
         self.comms.start()
 
@@ -60,6 +60,15 @@ class Controls():
                         if self.gamepad.get("X"):
                             self.state = Controls.DOWNLOADING_CODE
                             self.comms.isDownloadingCode = True
+                        if self.gamepad.get("Y"):
+                            self.state = Controls.REBOOTING
+                            self.comms.isRebooting = True
+                        if self.gamepad.get("BACK"):
+                            self.state = Controls.POWERED_OFF
+                            self.comms.isPoweringOff = True
+                        if self.gamepad.get("LOGITECH"):
+                            # Maybe need to do some thing here.
+                            sys.exit(0)
 
             elif self.state == Controls.ENABLED:
                 if self.comms.isConnected:
@@ -113,7 +122,7 @@ class Controls():
                + str(self.throttleAxis)     + "," \
                + str(self.xAxis)            + "," \
                + str(self.yAxis)            + "," \
-               + str(self.turnAxis)    
+               + str(self.turnAxis)
         #print output
         self.commsLock.release()
         return output
@@ -139,5 +148,3 @@ while True:
     gui.display(Controls, c.state, axes, c.gyro, indicators, None, None)
 
     time.sleep(0.05)
-
-

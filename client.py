@@ -7,7 +7,7 @@ import subprocess
 import os
 
 class Client(threading.Thread):
-    def __init__(self, generatePacket, processPacket, host="192.168.1.31", port=22333, updatePeriod = 0.03):
+    def __init__(self, generatePacket, processPacket, host="192.168.1.20", port=22333, updatePeriod = 0.03):
         """Initializes to socket client. generatePacket is a function that returns
             data to be sent to the server and processPacket is a function that takes
             received data as an argument. Both of these functions must deal with
@@ -30,31 +30,31 @@ class Client(threading.Thread):
             if not self.isServerPingable:
                 self.ping()
 
-            if self.isDownloadingCode:                
+            if self.isDownloadingCode:
 
                 self.isConnected = False
-                self.socket.close()                    
+                self.socket.close()
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
                 # To kill the old cevcopter processes:
-                os.system("ssh pi@192.168.1.31 \"/home/pi/kill_cevcopter_processes\"")
+                os.system("ssh pi@" + self.HOST + " \"/home/pi/kill_cevcopter_processes\"")
 
                 # To delete old files:
-                os.system("ssh pi@192.168.1.31 \"rm -f ~/cevcopter-bin/*\"")
+                os.system("ssh pi@" + self.HOST + " \"rm -f ~/cevcopter-bin/*\"")
 
                 # To copy in new files:
-                os.system("scp /home/aaron/cevcopter/cevcopter.py /home/aaron/cevcopter/server.py /home/aaron/cevcopter/serialserver.py pi@192.168.1.31:~/cevcopter-bin > /dev/null")
+                os.system("scp /home/aaron/cevcopter/cevcopter.py /home/aaron/cevcopter/server.py /home/aaron/cevcopter/serialserver.py pi@" + self.HOST + ":~/cevcopter-bin > /dev/null")
 
                 # To start running new code:
-                os.system("ssh pi@192.168.1.31 \"python /home/pi/cevcopter-bin/cevcopter.py > /dev/null 2> /dev/null < /dev/null &\"")
+                os.system("ssh pi@" + self.HOST + " \"python /home/pi/cevcopter-bin/cevcopter.py > /dev/null 2> /dev/null < /dev/null &\"")
 
                 self.isDownloadingCode = False
 
             if self.isRebooting:
                 self.isConnected = False
-                self.socket.close()                    
+                self.socket.close()
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                os.system("ssh pi@192.168.1.31 \"sudo reboot\"")
+                os.system("ssh pi@" + self.HOST + " \"sudo reboot\"")
                 # Wait until the pi powers down
                 while self.ping() == 0:
                     time.sleep(1.0)
@@ -63,13 +63,13 @@ class Client(threading.Thread):
                     time.sleep(1.0)
                 self.isRebooting = False
                 continue
-                
+
 
             if self.isPoweringOff:
                 self.isConnected = False
-                self.socket.close()                    
+                self.socket.close()
                 self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                os.system("ssh pi@192.168.1.31 \"sudo halt\"")
+                os.system("ssh pi@" + self.HOST + " \"sudo halt\"")
                 # Wait until the pi powers down
                 while self.ping() == 0:
                     time.sleep(1.0)

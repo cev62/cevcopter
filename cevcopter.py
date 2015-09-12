@@ -22,7 +22,7 @@ class Cevcopter():
         self.commsLock.acquire()
 
         print self.controlCommands
-        # Speed controls: anything below ~72 (probably 90) is off, and the motor 
+        # Speed controls: anything below ~72 (probably 90) is off, and the motor
         # varies from 72 to 180.
         if self.controlCommands[0] == 0:
             # Disabled, so always write 72 to turn motors off but keep initialization
@@ -36,10 +36,10 @@ class Cevcopter():
         else:
             self.serial.setOutgoingData([int(self.controlCommands[1]*(180)) for i in range(4)])
 
-        
+
 
         self.serialData = self.serial.getIncomingData()
-        #print "[Serial] " + str(self.serialData)
+        print "[Serial] " + str(self.serialData)
         if self.serialData:
             rawGyro = self.serialData[1:4]
             self.gyro = [float(i) for i in rawGyro]
@@ -54,7 +54,7 @@ class Cevcopter():
         #print "[Client Message] " + str(packet)
 
         # Process incoming
-        print packet
+        print "[From Controls] " + packet
         dataFromController = packet.split(",")
         if len(dataFromController) == self.exceptedControlCommandsLength:
             self.controlCommands = [float(i) for i in dataFromController]
